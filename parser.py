@@ -1,86 +1,255 @@
 import os
+import re
 import requests
-import base64
 from bs4 import BeautifulSoup
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
 }
 
+
+def clean_text(text):
+    """Схлопывает пробелы/переносы, которые остаются после get_text()."""
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+# ---------------------------------------------------------------------------
+# 1. arbeitsagentur.de
+# ---------------------------------------------------------------------------
 def parse_arbeitsagentur():
-    # Адрес изменен на правильный API
-    api_url = "https://arbeitsagentur.de"
-    params = {"was": "Fachinformatiker/in", "wo": "09111 Chemnitz, Sachsen", "umkreis": "25", "suchbereich": "ausbildung", "page": "1", "size": "20"}
-    headers = {"User-Agent": HEADERS["User-Agent"], "X-API-Key": "jobboerse-client-production-pc"}
+    url = "https://www.arbeitsagentur.de/jobsuche/suche"
+    params = {
+        "suchbereich": "ausbildung",
+        "was": "Fachinformatiker/in",
+        "wo": "09111 Chemnitz, Sachsen",
+        "umkreis": "25",
+    }
     vacancies = []
     try:
-        res = requests.get(api_url, params=params, headers=headers, timeout=15)
-        if res.status_code == 200:
-            for job in res.json().get("stellenangebote", []):
-                try:
-                    title = job.get("titel", "Ausbildung")
-                    company = job.get("arbeitgeber", "Ne указана")
-                    encoded_id = base64.b64encode(job.get("refnr").encode('utf-8')).decode('utf-8').replace('=', '')
-                    link = f"https://arbeitsagentur.de{encoded_id}"
-                    vacancies.append({"title": f"[Arbeitsagentur] {title}", "link": link, "company": company})
-                except: continue
-    except: pass
+        res = requests.get(url, params=params, headers=HEADERS, timeout=20)
+        print(f"[arbeitsagentur] status={res.status_code}, len={len(res.text)}")
+        if res.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(res.text, "html.parser")
+        seen = set()
+        # каждая вакансия — <article class="ergebnisliste-item">
+        for article in soup.find_all("article", class_="ergebnisliste-item"):
+            a = article.find("a", href=re.compile(r"/jobsuche/jobdetail/"))
+            if not a:
+                continue
+            link = a["href"]
+            if not link.startswith("http"):
+                link = "https://www.arbeitsagentur.de" + link
+            if link in seen:
+                continue
+            seen.add(link)
+
+            titel_div = article.find("div", class_="titel-lane")
+            firma_div = article.find("div", class_="firma-lane")
+
+            title = clean_text(titel_div.get_text()) if titel_div else clean_text(a.get_text())
+            title = re.sub(r"^\d+\.\s*", "", title)  # убираем "1. " в начале
+            company = clean_text(firma_div.get_text()) if firma_div else "Не указана"
+
+            if not title:
+                continue
+
+            vacancies.append({
+                "title": f"[Arbeitsagentur] {title}",
+                "link": link,
+                "company": company,
+            })
+    except Exception as e:
+        print(f"[arbeitsagentur] Ошибка: {e}")
     return vacancies
 
+
+# ---------------------------------------------------------------------------
+# 2. ausbildung.de
+# ---------------------------------------------------------------------------
+def parse_ausbildung_de():
+    url = "https://www.ausbildung.de/suche/"
+    params = {
+        "search": "Fachinformatiker/in-|Chemnitz",
+        "apprenticeshipType": ["Ausbildung", "Schulische und duale Ausbildung"],
+    }
+    vacancies = []
+    try:
+        res = requests.get(url, params=params, headers=HEADERS, timeout=20)
+        print(f"[ausbildung.de] status={res.status_code}, len={len(res.text)}")
+        if res.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(res.text, "html.parser")
+        seen = set()
+        for a in soup.find_all("a", href=re.compile(r"^/stellen/")):
+            link = a["href"]
+            if not link.startswith("http"):
+                link = "https://www.ausbildung.de" + link
+            if link in seen:
+                continue
+            seen.add(link)
+
+            title_el = a.find(attrs={"data-testid": "jp-title"})
+            company_el = a.find(attrs={"data-testid": "jp-customer"})
+
+            title = clean_text(title_el.get_text()) if title_el else ""
+            company = clean_text(company_el.get_text()) if company_el else "Не указана"
+            company = re.sub(r"^bei\s*", "", company)  # убираем "bei " в начале
+
+            if not title:
+                continue
+
+            vacancies.append({
+                "title": f"[Ausbildung.de] {title}",
+                "link": link,
+                "company": company,
+            })
+    except Exception as e:
+        print(f"[ausbildung.de] Ошибка: {e}")
+    return vacancies
+
+
+# ---------------------------------------------------------------------------
+# 3. azubi.de  (сайт может блокировать серверные IP / GitHub Actions)
+# ---------------------------------------------------------------------------
 def parse_azubi_de():
-    # Возвращен полный адрес поиска вакансий в Хемнице
-    url = "https://azubi.de"
+    url = ("https://www.azubi.de/beruf/ausbildung-fachinformatiker/"
+           "ausbildungsplaetze/stadt/chemnitz")
+    params = {
+        "text": "Fachinformatiker/in",
+        "location": "Chemnitz",
+        "radius": "30",
+        "apprenticeships[]": "ausbildung-fachinformatiker",
+    }
     vacancies = []
     try:
-        res = requests.get(url, headers=HEADERS, timeout=15)
-        if res.status_code != 200: return []
-        soup = BeautifulSoup(res.text, 'html.parser')
-        for link_tag in soup.find_all('a', href=lambda h: h and h.startswith('/ausbildungsplatz/')):
-            try:
-                link = "https://www.azubi.de" + link_tag['href']
-                title_el = link_tag.find('h2', class_=lambda c: c and 'hidden @lg:block' in c) or link_tag.find('h2')
-                if not title_el: continue
-                company_div = link_tag.find('div', class_='flex flex-wrap items-center gap-xs')
-                company = company_div.get_text(strip=True) if company_div else "Ne указана"
-                vacancies.append({"title": f"[Azubi.de] {title_el.get_text(strip=True)}", "link": link, "company": company})
-            except: continue
-    except: pass
+        res = requests.get(url, params=params, headers=HEADERS, timeout=20)
+        print(f"[azubi.de] status={res.status_code}, len={len(res.text)}")
+        if res.status_code != 200:
+            print("[azubi.de] Сайт не отдал 200 — вероятна анти-бот защита "
+                  "(Cloudflare) для серверных IP. Нужен либо curl_cffi / "
+                  "playwright, либо прокси.")
+            return []
+
+        soup = BeautifulSoup(res.text, "html.parser")
+        seen = set()
+        for a in soup.find_all("a", href=re.compile(r"/ausbildungsplatz/")):
+            link = a["href"]
+            if not link.startswith("http"):
+                link = "https://www.azubi.de" + link
+            if link in seen:
+                continue
+            seen.add(link)
+
+            # заголовок: любой из двух одинаковых <h2>...</h2> внутри карточки
+            title_el = a.find("h2")
+            title = clean_text(title_el.get_text()) if title_el else ""
+
+            # компания: <span> внутри блока "flex flex-wrap items-center gap-xs"
+            company = "Не указана"
+            company_block = a.find("div", class_=lambda c: c and "flex-wrap" in c and "items-center" in c)
+            if company_block:
+                company_span = company_block.find("span")
+                if company_span:
+                    company = clean_text(company_span.get_text())
+
+            if not title:
+                continue
+
+            vacancies.append({
+                "title": f"[Azubi.de] {title}",
+                "link": link,
+                "company": company,
+            })
+    except Exception as e:
+        print(f"[azubi.de] Ошибка: {e}")
     return vacancies
 
+
+# ---------------------------------------------------------------------------
+# 4. aubi-plus.de
+# ---------------------------------------------------------------------------
 def parse_aubi_plus():
-    # Возвращен полный адрес поиска вакансий в Хемнице
-    url = "https://aubi-plus.de"
+    url = "https://www.aubi-plus.de/suchmaschine/suche/"
+    params = {
+        "fBereich[]": "it-und-edv",
+        # "fBeginn[]": "2027",  # раскомментируйте, если нужен только набор 2027 года
+        "fLand[]": "deutschland",
+        "s[]": "relevanz",
+        "aSuggest": "Chemnitz (Chemnitz, Deutschland)",
+        "aSuggestLat": "50.835",
+        "aSuggestLon": "12.922",
+        "mSuggest": "Fachinformatiker/in",
+        "fGeo": "75",
+        "s": "relevanz",
+        "anzahl": "10",
+        "fBptl": "0",
+        "fBlitzbewerbung": "0",
+    }
     vacancies = []
     try:
-        res = requests.get(url, headers=HEADERS, timeout=15)
-        if res.status_code != 200: return []
-        soup = BeautifulSoup(res.text, 'html.parser')
-        for link_tag in soup.find_all('a', class_='stretched-link'):
-            try:
-                link = link_tag['href']
-                if not link.startswith('http'): link = "https://www.aubi-plus.de" + link
-                card_row = link_tag.find_parent('div', class_='row')
-                company = "Ne указана"
-                if card_row and card_row.find('img') and 'alt' in card_row.find('img').attrs:
-                    company = card_row.find('img')['alt'].replace('Logo', '').strip()
-                vacancies.append({"title": f"[Aubi-Plus] {link_tag.get_text(strip=True)}", "link": link, "company": company})
-            except: continue
-    except: pass
+        res = requests.get(url, params=params, headers=HEADERS, timeout=20)
+        print(f"[aubi-plus] status={res.status_code}, len={len(res.text)}")
+        if res.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(res.text, "html.parser")
+        seen = set()
+        # каждая карточка вакансии — <a class="stretched-link" href="/ausbildung/...">
+        for a in soup.find_all("a", class_="stretched-link", href=re.compile(r"^/ausbildung/")):
+            link = a["href"]
+            if not link.startswith("http"):
+                link = "https://www.aubi-plus.de" + link
+            if link in seen:
+                continue
+            seen.add(link)
+
+            title = clean_text(a.get_text())
+            if not title:
+                continue
+
+            # карточка целиком — родительский div "col-12 col-sm ..." с рядами row gy-2
+            company = "Не указана"
+            card = a.find_parent("div", class_="row")
+            if card:
+                # находим col-12 без <h2> и без <i> — там просто <span>Компания</span>
+                for col in card.find_all("div", class_="col-12"):
+                    if col.find("h2") is None and col.find("i") is None:
+                        span = col.find("span")
+                        if span:
+                            company = clean_text(span.get_text())
+                            break
+
+            vacancies.append({
+                "title": f"[Aubi-Plus] {title}",
+                "link": link,
+                "company": company,
+            })
+    except Exception as e:
+        print(f"[aubi-plus] Ошибка: {e}")
     return vacancies
 
+
+# ---------------------------------------------------------------------------
+# Telegram
+# ---------------------------------------------------------------------------
 def send_to_telegram(text):
     token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    
+
     if not token or not chat_id:
         print("Ошибка: Секреты Telegram не найдены")
         return
-        
-    # Ссылка исправлена на полностью корректный адрес API Telegram
-    url = f"https://telegram.org{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
-    
+
+    # ВАЖНО: правильный домен api.telegram.org и префикс /bot перед токеном
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+               "disable_web_page_preview": False}
+
     try:
         response = requests.post(url, json=payload, timeout=10)
         print(f"--- Отправка в Telegram (Чат ID: {chat_id}) ---")
@@ -90,30 +259,38 @@ def send_to_telegram(text):
     except Exception as e:
         print(f"Системная ошибка при отправке в ТГ: {e}")
 
+
 if __name__ == "__main__":
-    print("Проверка связи...")
-    send_to_telegram("Привет! Проверка связи с GitHub Actions прошла успешно!")
-    
     print("Сбор вакансий...")
-    all_jobs = parse_arbeitsagentur() + parse_azubi_de() + parse_aubi_plus()
+    all_jobs = (
+        parse_arbeitsagentur()
+        + parse_ausbildung_de()
+        + parse_azubi_de()
+        + parse_aubi_plus()
+    )
     print(f"Всего найдено вакансий на сайтах: {len(all_jobs)}")
-    
+
     sent_jobs_file = "sent_jobs.txt"
     if os.path.exists(sent_jobs_file):
-        with open(sent_jobs_file, "r") as f:
+        with open(sent_jobs_file, "r", encoding="utf-8") as f:
             sent_links = set(f.read().splitlines())
     else:
         sent_links = set()
 
     new_links = []
     for job in all_jobs:
-        if job['link'] not in sent_links:
-            message = f"<b>{job['title']}</b>\n\nКомпания: {job['company']}\nСсылка: {job['link']}"
+        if job["link"] not in sent_links:
+            message = (f"<b>{job['title']}</b>\n\n"
+                       f"Компания: {job['company']}\n"
+                       f"Ссылка: {job['link']}")
             send_to_telegram(message)
-            new_links.append(job['link'])
+            new_links.append(job["link"])
             print(f"Отправлено в ТГ: {job['title']}")
 
     if new_links:
-        with open(sent_jobs_file, "a") as f:
+        with open(sent_jobs_file, "a", encoding="utf-8") as f:
             for link in new_links:
                 f.write(link + "\n")
+
+    if not new_links:
+        print("Новых вакансий не найдено.")
