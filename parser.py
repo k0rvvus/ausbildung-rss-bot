@@ -19,10 +19,10 @@ def parse_arbeitsagentur():
             for job in res.json().get("stellenangebote", []):
                 try:
                     title = job.get("titel", "Ausbildung")
-                    company = job.get("arbeitgeber", "Не указана")
+                    company = job.get("arbeitgeber", "Ne указана")
                     encoded_id = base64.b64encode(job.get("refnr").encode('utf-8')).decode('utf-8').replace('=', '')
                     link = f"https://arbeitsagentur.de{encoded_id}"
-                    vacancies.append({"title": f" [Arbeitsagentur] {title}", "link": link, "company": company})
+                    vacancies.append({"title": f"[Arbeitsagentur] {title}", "link": link, "company": company})
                 except: continue
     except: pass
     return vacancies
@@ -40,8 +40,8 @@ def parse_azubi_de():
                 title_el = link_tag.find('h2', class_=lambda c: c and 'hidden @lg:block' in c) or link_tag.find('h2')
                 if not title_el: continue
                 company_div = link_tag.find('div', class_='flex flex-wrap items-center gap-xs')
-                company = company_div.get_text(strip=True) if company_div else "Не указана"
-                vacancies.append({"title": f"⚡ [Azubi.de] {title_el.get_text(strip=True)}", "link": link, "company": company})
+                company = company_div.get_text(strip=True) if company_div else "Ne указана"
+                vacancies.append({"title": f"[Azubi.de] {title_el.get_text(strip=True)}", "link": link, "company": company})
             except: continue
     except: pass
     return vacancies
@@ -58,24 +58,22 @@ def parse_aubi_plus():
                 link = link_tag['href']
                 if not link.startswith('http'): link = "https://aubi-plus.de" + link
                 card_row = link_tag.find_parent('div', class_='row')
-                company = "Не указана"
+                company = "Ne указана"
                 if card_row and card_row.find('img') and 'alt' in card_row.find('img').attrs:
                     company = card_row.find('img')['alt'].replace('Logo', '').strip()
-                vacancies.append({"title": f" [Aubi-Plus] {link_tag.get_text(strip=True)}", "link": link, "company": company})
+                vacancies.append({"title": f"[Aubi-Plus] {link_tag.get_text(strip=True)}", "link": link, "company": company})
             except: continue
     except: pass
     return vacancies
 
 def send_to_telegram(text):
-    """Функция отправки сообщения с правильным базовым URL Telegram API"""
     token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     
     if not token or not chat_id:
-        print("Ошибка: Секреты Telegram не найдены!")
+        print("Ошибка: Секреты Telegram не найдены")
         return
         
-    # Исправленный базовый адрес API Telegram
     url = f"https://telegram.org{token}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
     
@@ -91,10 +89,11 @@ def send_to_telegram(text):
 if __name__ == "__main__":
     print("Проверка связи...")
     send_to_telegram("Привет! Проверка связи с GitHub Actions прошла успешно!")
+    
     print("Сбор вакансий...")
     all_jobs = parse_arbeitsagentur() + parse_azubi_de() + parse_aubi_plus()
+    print(f"Всего найдено вакансий на сайтах: {len(all_jobs)}")
     
-    # Файл-память, чтобы бот присылал только НОВЫЕ вакансии и не спамил старыми
     sent_jobs_file = "sent_jobs.txt"
     if os.path.exists(sent_jobs_file):
         with open(sent_jobs_file, "r") as f:
@@ -105,13 +104,11 @@ if __name__ == "__main__":
     new_links = []
     for job in all_jobs:
         if job['link'] not in sent_links:
-            # Формируем красивый текст сообщения
-            message = f"<b>{job['title']}</b>\n\n Компания: {job['company']}\n Ссылка: {job['link']}"
+            message = f"<b>{job['title']}</b>\n\nКомпания: {job['company']}\nСсылка: {job['link']}"
             send_to_telegram(message)
             new_links.append(job['link'])
             print(f"Отправлено в ТГ: {job['title']}")
 
-    # Запоминаем отправленные ссылки
     if new_links:
         with open(sent_jobs_file, "a") as f:
             for link in new_links:
