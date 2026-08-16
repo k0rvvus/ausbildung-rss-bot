@@ -54,6 +54,16 @@ def parse_arbeitsagentur():
             title = re.sub(r"^\d+\.\s*", "", title)  # убираем "1. " в начале
             company = clean_text(firma_div.get_text()) if firma_div else "Не указана"
 
+            # доп. поля: место, дата начала, зарплата — уже есть в том же ответе
+            ort_span = article.find("span", id=re.compile(r"eintrag-\d+-arbeitsort"))
+            date_li = article.find("li", class_="eintrittsdatum-tag")
+            gehalt_li = article.find("li", class_="gehalt-tag")
+
+            location = clean_text(ort_span.get_text()) if ort_span else ""
+            location = re.sub(r"^Arbeitsort:\s*", "", location)
+            start_date = clean_text(date_li.get_text()) if date_li else ""
+            salary = clean_text(gehalt_li.get_text()) if gehalt_li else ""
+
             if not title:
                 continue
 
@@ -61,6 +71,9 @@ def parse_arbeitsagentur():
                 "title": f"[Arbeitsagentur] {title}",
                 "link": link,
                 "company": company,
+                "location": location,
+                "start_date": start_date,
+                "salary": salary,
             })
     except Exception as e:
         print(f"[arbeitsagentur] Ошибка: {e}")
@@ -95,10 +108,16 @@ def parse_ausbildung_de():
 
             title_el = a.find(attrs={"data-testid": "jp-title"})
             company_el = a.find(attrs={"data-testid": "jp-customer"})
+            branches_el = a.find(attrs={"data-testid": "jp-branches"})
+            starting_el = a.find(attrs={"data-testid": "jp-starting-at"})
+            vacancies_el = a.find(attrs={"data-testid": "jp-vacancies"})
 
             title = clean_text(title_el.get_text()) if title_el else ""
             company = clean_text(company_el.get_text()) if company_el else "Не указана"
             company = re.sub(r"^bei\s*", "", company)  # убираем "bei " в начале
+            location = clean_text(branches_el.get_text()) if branches_el else ""
+            start_date = clean_text(starting_el.get_text()) if starting_el else ""
+            places = clean_text(vacancies_el.get_text()) if vacancies_el else ""
 
             if not title:
                 continue
@@ -107,6 +126,9 @@ def parse_ausbildung_de():
                 "title": f"[Ausbildung.de] {title}",
                 "link": link,
                 "company": company,
+                "location": location,
+                "start_date": start_date,
+                "places": places,
             })
     except Exception as e:
         print(f"[ausbildung.de] Ошибка: {e}")
@@ -157,6 +179,17 @@ def parse_azubi_de():
                 if company_span:
                     company = clean_text(company_span.get_text())
 
+            # город и дата начала — идут в <li> списке рядом с иконками
+            location = ""
+            start_date = ""
+            li_items = a.find_all("li")
+            for li in li_items:
+                text = clean_text(li.get_text())
+                if re.match(r"^\d{2}\.\d{2}\.\d{4}$", text):
+                    start_date = text
+                elif text:
+                    location = text
+
             if not title:
                 continue
 
@@ -164,6 +197,8 @@ def parse_azubi_de():
                 "title": f"[Azubi.de] {title}",
                 "link": link,
                 "company": company,
+                "location": location,
+                "start_date": start_date,
             })
     except Exception as e:
         print(f"[azubi.de] Ошибка: {e}")
@@ -214,6 +249,8 @@ def parse_aubi_plus():
 
             # карточка целиком — родительский div "col-12 col-sm ..." с рядами row gy-2
             company = "Не указана"
+            location = ""
+            start_date = ""
             card = a.find_parent("div", class_="row")
             if card:
                 # находим col-12 без <h2> и без <i> — там просто <span>Компания</span>
@@ -224,10 +261,25 @@ def parse_aubi_plus():
                             company = clean_text(span.get_text())
                             break
 
+                # город — рядом с иконкой fa-location-dot, дата — с fa-calendar-days
+                loc_icon = card.find("i", class_=re.compile(r"fa-location-dot"))
+                if loc_icon:
+                    loc_span = loc_icon.find_next("span")
+                    if loc_span:
+                        location = clean_text(loc_span.get_text())
+
+                date_icon = card.find("i", class_=re.compile(r"fa-calendar-days"))
+                if date_icon:
+                    date_span = date_icon.find_next("span")
+                    if date_span:
+                        start_date = clean_text(date_span.get_text())
+
             vacancies.append({
                 "title": f"[Aubi-Plus] {title}",
                 "link": link,
                 "company": company,
+                "location": location,
+                "start_date": start_date,
             })
     except Exception as e:
         print(f"[aubi-plus] Ошибка: {e}")
@@ -339,8 +391,22 @@ if __name__ == "__main__":
     new_links = []
     for job in all_jobs:
         if job["link"] not in sent_links:
+            # доп. строки саммари — добавляются, только если поле реально есть
+            extra_lines = []
+            if job.get("location"):
+                extra_lines.append(f"Город: {job['location']}")
+            if job.get("start_date"):
+                extra_lines.append(f"Начало: {job['start_date']}")
+            if job.get("salary"):
+                extra_lines.append(f"Зарплата: {job['salary']}")
+            if job.get("places"):
+                extra_lines.append(f"Мест: {job['places']}")
+
+            extra_text = ("\n" + "\n".join(extra_lines)) if extra_lines else ""
+
             message = (f"<b>{job['title']}</b>\n\n"
-                       f"Компания: {job['company']}\n"
+                       f"Компания: {job['company']}"
+                       f"{extra_text}\n"
                        f"Ссылка: {job['link']}")
             send_to_telegram(message)
             new_links.append(job["link"])
