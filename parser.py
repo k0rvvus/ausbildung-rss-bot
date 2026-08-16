@@ -82,6 +82,8 @@ def send_to_telegram(text):
         print(f"Ошибка отправки в ТГ: {e}")
 
 if __name__ == "__main__":
+    print("Проверка связи...")
+    send_to_telegram("👋 Привет! Проверка связи с GitHub Actions прошла успешно!")
     print("Сбор вакансий...")
     all_jobs = parse_arbeitsagentur() + parse_azubi_de() + parse_aubi_plus()
     
