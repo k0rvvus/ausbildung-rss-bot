@@ -2,6 +2,7 @@ import os
 import re
 import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -136,28 +137,42 @@ def parse_ausbildung_de():
 
 
 # ---------------------------------------------------------------------------
-# 3. azubi.de  (сайт может блокировать серверные IP / GitHub Actions)
+# 3. azubi.de — через headless-браузер Playwright
+#    (обычный requests.get блокируется Cloudflare на уровне TLS-фингерпринта,
+#     возвращая 405; настоящий браузер этот барьер проходит нормально)
 # ---------------------------------------------------------------------------
 def parse_azubi_de():
-    url = ("https://www.azubi.de/beruf/ausbildung-fachinformatiker/"
-           "ausbildungsplaetze/stadt/chemnitz")
+    from urllib.parse import urlencode
+
+    base_url = ("https://www.azubi.de/beruf/ausbildung-fachinformatiker/"
+                "ausbildungsplaetze/stadt/chemnitz")
     params = {
         "text": "Fachinformatiker/in",
         "location": "Chemnitz",
         "radius": "30",
         "apprenticeships[]": "ausbildung-fachinformatiker",
     }
+    full_url = base_url + "?" + urlencode(params)
+
     vacancies = []
+    html = ""
     try:
-        res = requests.get(url, params=params, headers=HEADERS, timeout=20)
-        print(f"[azubi.de] status={res.status_code}, len={len(res.text)}")
-        if res.status_code != 200:
-            print("[azubi.de] Сайт не отдал 200 — вероятна анти-бот защита "
-                  "(Cloudflare) для серверных IP. Нужен либо curl_cffi / "
-                  "playwright, либо прокси.")
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=HEADERS["User-Agent"],
+                locale="de-DE",
+            )
+            page = context.new_page()
+            page.goto(full_url, timeout=30000, wait_until="networkidle")
+            html = page.content()
+            browser.close()
+
+        print(f"[azubi.de] Playwright загрузил страницу, len={len(html)}")
+        if not html:
             return []
 
-        soup = BeautifulSoup(res.text, "html.parser")
+        soup = BeautifulSoup(html, "html.parser")
         seen = set()
         for a in soup.find_all("a", href=re.compile(r"/ausbildungsplatz/")):
             link = a["href"]
