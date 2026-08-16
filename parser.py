@@ -22,7 +22,7 @@ def parse_arbeitsagentur():
                     company = job.get("arbeitgeber", "Не указана")
                     encoded_id = base64.b64encode(job.get("refnr").encode('utf-8')).decode('utf-8').replace('=', '')
                     link = f"https://arbeitsagentur.de{encoded_id}"
-                    vacancies.append({"title": f"💼 [Arbeitsagentur] {title}", "link": link, "company": company})
+                    vacancies.append({"title": f" [Arbeitsagentur] {title}", "link": link, "company": company})
                 except: continue
     except: pass
     return vacancies
@@ -61,29 +61,36 @@ def parse_aubi_plus():
                 company = "Не указана"
                 if card_row and card_row.find('img') and 'alt' in card_row.find('img').attrs:
                     company = card_row.find('img')['alt'].replace('Logo', '').strip()
-                vacancies.append({"title": f"🎯 [Aubi-Plus] {link_tag.get_text(strip=True)}", "link": link, "company": company})
+                vacancies.append({"title": f" [Aubi-Plus] {link_tag.get_text(strip=True)}", "link": link, "company": company})
             except: continue
     except: pass
     return vacancies
 
 def send_to_telegram(text):
-    """Функция отправки сообщения через вашего бота"""
+    """Функция отправки сообщения с правильным базовым URL Telegram API"""
     token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    
     if not token or not chat_id:
-        print("Ошибка: Секреты Telegram не настроены в GitHub!")
+        print("Ошибка: Секреты Telegram не найдены!")
         return
         
+    # Исправленный базовый адрес API Telegram
     url = f"https://telegram.org{token}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+    
     try:
-        requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=10)
+        print(f"--- Отправка в Telegram (Чат ID: {chat_id}) ---")
+        print(f"Статус-код ответа: {response.status_code}")
+        print(f"Ответ от API: {response.text}")
+        print("---------------------------------------------")
     except Exception as e:
-        print(f"Ошибка отправки в ТГ: {e}")
+        print(f"Системная ошибка при отправке в ТГ: {e}")
 
 if __name__ == "__main__":
     print("Проверка связи...")
-    send_to_telegram("👋 Привет! Проверка связи с GitHub Actions прошла успешно!")
+    send_to_telegram("Привет! Проверка связи с GitHub Actions прошла успешно!")
     print("Сбор вакансий...")
     all_jobs = parse_arbeitsagentur() + parse_azubi_de() + parse_aubi_plus()
     
@@ -99,7 +106,7 @@ if __name__ == "__main__":
     for job in all_jobs:
         if job['link'] not in sent_links:
             # Формируем красивый текст сообщения
-            message = f"<b>{job['title']}</b>\n\n🏢 Компания: {job['company']}\n🔗 Ссылка: {job['link']}"
+            message = f"<b>{job['title']}</b>\n\n Компания: {job['company']}\n Ссылка: {job['link']}"
             send_to_telegram(message)
             new_links.append(job['link'])
             print(f"Отправлено в ТГ: {job['title']}")
