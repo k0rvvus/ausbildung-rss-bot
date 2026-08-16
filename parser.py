@@ -235,6 +235,64 @@ def parse_aubi_plus():
 
 
 # ---------------------------------------------------------------------------
+# 5. Весь интернет — через RSS-канал Google Alerts
+#    (Custom Search JSON API закрыт для новых пользователей с 2025 года,
+#    поэтому используем сам продукт Google Alerts, а не платный API)
+#
+#    Настройка (один раз, без кода):
+#    1. Зайти на google.com/alerts
+#    2. Создать оповещение с запросом:
+#       "Ausbildung" "Fachinformatiker" (Chemnitz OR Dresden OR Leipzig)
+#    3. "Показать параметры" -> Источники: Все, Регион: Германия,
+#       Частота: как можно быстрее, Показывать: Все результаты,
+#       Доставлять на: RSS-канал
+#    4. Скопировать ссылку на RSS (вида
+#       https://www.google.com/alerts/feeds/XXXXX/XXXXX)
+#       и сохранить её в секрете GOOGLE_ALERTS_RSS_URL
+# ---------------------------------------------------------------------------
+def parse_google_alerts():
+    feed_url = os.environ.get("GOOGLE_ALERTS_RSS_URL")
+    if not feed_url:
+        print("[google-alerts] GOOGLE_ALERTS_RSS_URL не задан — пропускаем")
+        return []
+
+    vacancies = []
+    try:
+        res = requests.get(feed_url, headers=HEADERS, timeout=20)
+        print(f"[google-alerts] status={res.status_code}, len={len(res.text)}")
+        if res.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(res.text, "xml")
+        for entry in soup.find_all("entry"):
+            link_tag = entry.find("link")
+            title_tag = entry.find("title")
+            if not link_tag or not link_tag.get("href"):
+                continue
+
+            link = link_tag["href"]
+            # Google Alerts заворачивает реальную ссылку в редирект-URL
+            # вида https://www.google.com/url?...&url=REAL_LINK&...
+            m = re.search(r"[?&]url=([^&]+)", link)
+            if m:
+                from urllib.parse import unquote
+                link = unquote(m.group(1))
+
+            title = (clean_text(BeautifulSoup(title_tag.get_text(), "html.parser").get_text())
+                     if title_tag else link)
+            domain = re.sub(r"^https?://(www\.)?", "", link).split("/")[0]
+
+            vacancies.append({
+                "title": f"[{domain}] {title}",
+                "link": link,
+                "company": "См. по ссылке",
+            })
+    except Exception as e:
+        print(f"[google-alerts] Ошибка: {e}")
+    return vacancies
+
+
+# ---------------------------------------------------------------------------
 # Telegram
 # ---------------------------------------------------------------------------
 def send_to_telegram(text):
@@ -267,6 +325,7 @@ if __name__ == "__main__":
         + parse_ausbildung_de()
         + parse_azubi_de()
         + parse_aubi_plus()
+        + parse_google_alerts()
     )
     print(f"Всего найдено вакансий на сайтах: {len(all_jobs)}")
 
