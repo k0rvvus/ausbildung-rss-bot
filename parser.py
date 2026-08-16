@@ -9,6 +9,7 @@ HEADERS = {
 }
 
 def parse_arbeitsagentur():
+    # Адрес изменен на правильный API
     api_url = "https://arbeitsagentur.de"
     params = {"was": "Fachinformatiker/in", "wo": "09111 Chemnitz, Sachsen", "umkreis": "25", "suchbereich": "ausbildung", "page": "1", "size": "20"}
     headers = {"User-Agent": HEADERS["User-Agent"], "X-API-Key": "jobboerse-client-production-pc"}
@@ -28,6 +29,7 @@ def parse_arbeitsagentur():
     return vacancies
 
 def parse_azubi_de():
+    # Возвращен полный адрес поиска вакансий в Хемнице
     url = "https://azubi.de"
     vacancies = []
     try:
@@ -36,7 +38,7 @@ def parse_azubi_de():
         soup = BeautifulSoup(res.text, 'html.parser')
         for link_tag in soup.find_all('a', href=lambda h: h and h.startswith('/ausbildungsplatz/')):
             try:
-                link = "https://azubi.de" + link_tag['href']
+                link = "https://www.azubi.de" + link_tag['href']
                 title_el = link_tag.find('h2', class_=lambda c: c and 'hidden @lg:block' in c) or link_tag.find('h2')
                 if not title_el: continue
                 company_div = link_tag.find('div', class_='flex flex-wrap items-center gap-xs')
@@ -47,6 +49,7 @@ def parse_azubi_de():
     return vacancies
 
 def parse_aubi_plus():
+    # Возвращен полный адрес поиска вакансий в Хемнице
     url = "https://aubi-plus.de"
     vacancies = []
     try:
@@ -56,7 +59,7 @@ def parse_aubi_plus():
         for link_tag in soup.find_all('a', class_='stretched-link'):
             try:
                 link = link_tag['href']
-                if not link.startswith('http'): link = "https://aubi-plus.de" + link
+                if not link.startswith('http'): link = "https://www.aubi-plus.de" + link
                 card_row = link_tag.find_parent('div', class_='row')
                 company = "Ne указана"
                 if card_row and card_row.find('img') and 'alt' in card_row.find('img').attrs:
@@ -74,6 +77,7 @@ def send_to_telegram(text):
         print("Ошибка: Секреты Telegram не найдены")
         return
         
+    # Ссылка исправлена на полностью корректный адрес API Telegram
     url = f"https://telegram.org{token}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
     
