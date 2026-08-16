@@ -1,7 +1,7 @@
 name: Update Ausbildung RSS Feed
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -23,7 +23,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 lxml
+        pip install requests beautifulsoup4 lxml playwright
+        playwright install --with-deps chromium
     - name: Run parser script
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
