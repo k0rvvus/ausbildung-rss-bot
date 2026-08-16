@@ -164,11 +164,29 @@ def parse_azubi_de():
                 locale="de-DE",
             )
             page = context.new_page()
-            page.goto(full_url, timeout=30000, wait_until="networkidle")
+            page.goto(full_url, timeout=30000, wait_until="domcontentloaded")
+
+            # ждём появления реальных карточек вакансий, а не просто "сеть затихла"
+            try:
+                page.wait_for_selector("a[href*='/ausbildungsplatz/']", timeout=15000)
+            except Exception:
+                print("[azubi.de] Карточки вакансий не появились за 15 секунд — "
+                      "вероятно, антибот-заглушка или капча")
+
             html = page.content()
+            page_title = page.title()
             browser.close()
 
-        print(f"[azubi.de] Playwright загрузил страницу, len={len(html)}")
+        print(f"[azubi.de] Playwright загрузил страницу, len={len(html)}, "
+              f"title='{page_title}'")
+
+        # диагностика: если страница маленькая/подозрительная — печатаем кусок для анализа
+        if len(html) < 30000:
+            snippet = re.sub(r"<[^>]+>", " ", html)
+            snippet = clean_text(snippet)[:400]
+            print(f"[azubi.de] Похоже на блокировку/пустую страницу. "
+                  f"Текст (первые 400 симв.): {snippet}")
+
         if not html:
             return []
 
