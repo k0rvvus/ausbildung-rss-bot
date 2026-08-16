@@ -140,6 +140,12 @@ def parse_ausbildung_de():
 # 3. azubi.de — через headless-браузер Playwright
 #    (обычный requests.get блокируется Cloudflare на уровне TLS-фингерпринта,
 #     возвращая 405; настоящий браузер этот барьер проходит нормально)
+#
+#    ВНИМАНИЕ: сайт стабильно отдаёт антибот-заглушку даже через Playwright,
+#    поэтому вызов этой функции убран из main(), чтобы не тратить время
+#    (до 30+ секунд) на заведомо безуспешную попытку. Функция оставлена
+#    в коде на случай, если сайт снова станет доступен — тогда достаточно
+#    вернуть вызов parse_azubi_de() в список all_jobs ниже.
 # ---------------------------------------------------------------------------
 def parse_azubi_de():
     from urllib.parse import urlencode
@@ -408,11 +414,18 @@ if __name__ == "__main__":
     all_jobs = (
         parse_arbeitsagentur()
         + parse_ausbildung_de()
-        + parse_azubi_de()
+        # parse_azubi_de() намеренно не вызывается: сайт стабильно отдаёт
+        # антибот-заглушку даже через Playwright, поэтому запуск только
+        # впустую тратит время (до 30+ секунд на попытку).
         + parse_aubi_plus()
         + parse_google_alerts()
     )
     print(f"Всего найдено вакансий на сайтах: {len(all_jobs)}")
+
+    # Определяем, был ли запуск ручным (GitHub Actions прокидывает это
+    # автоматически через GITHUB_EVENT_NAME: 'workflow_dispatch' — ручной
+    # запуск кнопкой "Run workflow", 'schedule' — по расписанию).
+    is_manual_run = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
     sent_jobs_file = "sent_jobs.txt"
     if os.path.exists(sent_jobs_file):
@@ -449,6 +462,12 @@ if __name__ == "__main__":
         with open(sent_jobs_file, "a", encoding="utf-8") as f:
             for link in new_links:
                 f.write(link + "\n")
-
-    if not new_links:
+        print(f"Отправлено новых вакансий: {len(new_links)}")
+    else:
+        # Новых вакансий действительно нет: сообщаем об этом в Telegram.
+        # При ручном запуске формулировка другая — это по сути "тест связи".
+        if is_manual_run:
+            send_to_telegram("✅ Тест пройден успешно. Новых вакансий нет.")
+        else:
+            send_to_telegram("Новых вакансий не найдено.")
         print("Новых вакансий не найдено.")
