@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel>
+    <title>Супер-Агрегатор Ausbildung: Chemnitz IT</title>
+    <link>https://github.com</link>
+    <description>Общий RSS-фид вакансий Fachinformatiker в Хемнице с 4-х сайтов</description>
+    <docs>http://www.rssboard.org/rss-specification</docs>
+    <generator>python-feedgen</generator>
+    <lastBuildDate>Sun, 16 Aug 2026 12:23:32 +0000</lastBuildDate>
+    <item>
+      <title>[Ausbildung.de] Ausbildung zum Kaufmann im Einzelhandel, Fachrichtung Lebensmittel (m/w/d) - 2027</title>
+      <link>https://ausbildung.de/stellen/ausbildung-zum-kaufmann-im-einzelhandel-fachrichtung-lebensmittel-m-w-d-2027-bei-rewe-markt-gmbh-in-berlin-5e52593c-da50-4e40-a63c-c778249181d9/</link>
+      <description>Свежая вакансия в Хемнице.
+Источник: Ausbildung.de</description>
+      <guid isPermaLink="false">https://ausbildung.de/stellen/ausbildung-zum-kaufmann-im-einzelhandel-fachrichtung-lebensmittel-m-w-d-2027-bei-rewe-markt-gmbh-in-berlin-5e52593c-da50-4e40-a63c-c778249181d9/</guid>
+    </item>
+    <item>
+      <title>[Ausbildung.de] Ausbildung zum Handelsfachwirt (IHK) Einzelhandel (m/w/d)</title>
+      <link>https://ausbildung.de/stellen/ausbildung-zum-handelsfachwirt-ihk-einzelhandel-m-w-d-bei-edeka-verbund-in-sonthofen-eabe0304-cf68-43b4-a6e2-f55776200d7b/</link>
+      <description>Свежая вакансия в Хемнице.
+Источник: Ausbildung.de</description>
+      <guid isPermaLink="false">https://ausbildung.de/stellen/ausbildung-zum-handelsfachwirt-ihk-einzelhandel-m-w-d-bei-edeka-verbund-in-sonthofen-eabe0304-cf68-43b4-a6e2-f55776200d7b/</guid>
+    </item>
+    <item>
+      <title>[Ausbildung.de] Ausbildung zum Kaufmann im Einzelhandel (m/w/d) 2026</title>
+      <link>https://ausbildung.de/stellen/ausbildung-zum-kaufmann-im-einzelhandel-m-w-d-2026-bei-edeka-verbund-in-pleinfeld-ecead5f8-7830-412d-a1c6-f8906d243e59/</link>
+      <description>Свежая вакансия в Хемнице.
+Источник: Ausbildung.de</description>
+      <guid isPermaLink="false">https://ausbildung.de/stellen/ausbildung-zum-kaufmann-im-einzelhandel-m-w-d-2026-bei-edeka-verbund-in-pleinfeld-ecead5f8-7830-412d-a1c6-f8906d243e59/</guid>
+    </item>
+    <item>
+      <title>[Ausbildung.de] Ausbildung zum Fachverkäufer im Lebensmittelhandwerk (Fleischerei) (m/w/d) 2026</title>
+      <link>https://ausbildung.de/stellen/ausbildung-zum-fachverkaeufer-im-lebensmittelhandwerk-fleischerei-m-w-d-2026-bei-edeka-verbund-in-nuernberg-4ef82d19-59ad-4435-b12b-03e55329ca01/</link>
+      <description>Свежая вакансия в Хемнице.
+Источник: Ausbildung.de</description>
+      <guid isPermaLink="false">https://ausbildung.de/stellen/ausbildung-zum-fachverkaeufer-im-lebensmittelhandwerk-fleischerei-m-w-d-2026-bei-edeka-verbund-in-nuernberg-4ef82d19-59ad-4435-b12b-03e55329ca01/</guid>
+    </item>
+    <item>
+      <title>[Ausbildung.de] Ausbildung Physiotherapeut:in</title>
+      <link>https://ausbildung.de/stellen/ausbildung-physiotherapeut-in-bei-srh-fachschulen-gmbh-in-stuttgart-4feef577-787e-4c96-894f-2d7e84f65915/</link>
+      <description>Свежая вакансия в Хемнице.
+Источник: Ausbildung.de</description>
+      <guid isPermaLink="false">https://ausbildung.de/stellen/ausbildung-physiotherapeut-in-bei-srh-fachschulen-gmbh-in-stuttgart-4feef577-787e-4c96-894f-2d7e84f65915/</guid>
+    </item>
+    <item>
+      <title>[Aubi-Plus] Berufsschule - Kaufmann*Kauffrau für IT-System-Management</title>
+      <link>https://www.aubi-plus.de/ausbildung/euro-schulen-leipzig-kaufmann-fuer-it-system-management-leipzig-447716/</link>
+      <description>Компания: Не указана
+Источник: Aubi-Plus.de</description>
+      <guid isPermaLink="false">https://www.aubi-plus.de/ausbildung/euro-schulen-leipzig-kaufmann-fuer-it-system-management-leipzig-447716/</guid>
+    </item>
+    <item>
+      <title>[Aubi-Plus] Ausbildung Fachinformatiker Fachrichtung Systemintegration (m/w/d) für 2027</title>
+      <link>https://www.aubi-plus.de/ausbildung/akademie-fuer-berufliche-bildung-ggmbh-fachinformatiker-fachrichtung-systemintegration-dresden-47131/</link>
+      <description>Компания: Blitzbewerbung
+Источник: Aubi-Plus.de</description>
+      <guid isPermaLink="false">https://www.aubi-plus.de/ausbildung/akademie-fuer-berufliche-bildung-ggmbh-fachinformatiker-fachrichtung-systemintegration-dresden-47131/</guid>
+    </item>
+    <item>
+      <title>[Aubi-Plus] Ausbildung Fachinformatiker Fachrichtung Anwendungsentwicklung (m/w/d) für 2027</title>
+      <link>https://www.aubi-plus.de/ausbildung/akademie-fuer-berufliche-bildung-ggmbh-fachinformatiker-fachrichtung-anwendungsentwicklung-dresden-58962/</link>
+      <description>Компания: Blitzbewerbung
+Источник: Aubi-Plus.de</description>
+      <guid isPermaLink="false">https://www.aubi-plus.de/ausbildung/akademie-fuer-berufliche-bildung-ggmbh-fachinformatiker-fachrichtung-anwendungsentwicklung-dresden-58962/</guid>
+    </item>
+  </channel>
+</rss>
