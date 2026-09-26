@@ -1,7 +1,7 @@
 # ausbildung-rss-bot
 
 ## Purpose
-An automated Python tool designed to scan, filter, and track vacancy feeds for IT apprenticeships (Fachinformatiker für Anwendungsentwicklung). The goal of this project is to automate the job search process and demonstrate practical backend logic and AI-assisted development.
+An automated Python tool designed to scan, filter, and track vacancy feeds for IT apprenticeships (Fachinformatiker). The goal of this project is to automate the job search process and demonstrate practical backend logic and AI-assisted development.
 
 ## Core Features
 * Automated Parsing: Periodically reads data from job portals using RSS and XML feeds.
@@ -22,7 +22,7 @@ An automated Python tool designed to scan, filter, and track vacancy feeds for I
 # Ausbildung RSS Bot
 
 ## Zweck
-Ein automatisiertes Python-Tool zum Scannen, Filtern und Verfolgen von Ausbildungsplätzen im IT-Bereich (Fachinformatiker für Anwendungsentwicklung). Das Ziel dieses Projekts ist es, den Suchprozess zu automatisieren sowie praktische Backend-Logik und KI-gestützte Entwicklung zu demonstrieren.
+Ein automatisiertes Python-Tool zum Scannen, Filtern und Verfolgen von Ausbildungsplätzen im IT-Bereich (Fachinformatiker). Das Ziel dieses Projekts ist es, den Suchprozess zu automatisieren sowie praktische Backend-Logik und KI-gestützte Entwicklung zu demonstrieren.
 
 ## Hauptfunktionen
 * Automatisiertes Parsing: Regelmäßiges Auslesen von Daten aus Stellenportalen über RSS- und XML-Feeds.
