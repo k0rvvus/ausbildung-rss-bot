@@ -26,7 +26,7 @@ Ein automatisiertes Python-Tool zum Scannen, Filtern und Verfolgen von Ausbildun
 
 ## Hauptfunktionen
 * Automatisiertes Parsing: Regelmäßiges Auslesen von Daten aus Stellenportalen über RSS- und XML-Feeds.
-* Duplikatsprüfung: Verwendet eine lokale Datei (sent_jobs.txt), чтобы регистрировать обработанные вакансии и избегать повторов.
+* Duplikatsprüfung: Verwendet eine lokale Datei (sent_jobs.txt), um bearbeitete Stellenangebote zu erfassen und Doppeleinträge zu vermeiden.
 * AI-Assisted Development: Entwickelt und optimiert mittels Prompt Engineering für schnelle Code-Generierung und Fehlersuche.
 
 ## Struktur und Dateien
